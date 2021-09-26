@@ -1,0 +1,422 @@
+#!/usr/bin/env python3
+
+# This seems to work quite well in Windows-10 but I still not able to
+# make executable file with py2exe....
+# able to make executable but only when I change os.path.dirname(__file__) to os.getcwd()3
+# windosw executable need to be os.getcwd()
+# but linux need to be os.path.dirname() or os.path.dirname(os.path.abspath(__file__))
+
+# ---------------------------- IMPORTS ------------------------------- #
+import random
+import tkinter
+from tkinter import messagebox
+import json
+import os
+from sys import platform
+
+# ---------------------------- VARIABLES ------------------------------- #
+# Folder for storing data, will be in same directory as the thaiicePass program
+dataFolder = "data/"
+# get problem making py2exe so changed. Then get problem executing from Linux-menu
+programPath = os.path.dirname(__file__) # problem make windows exe file_input
+#programPath = os.getcwd() # seems not work run from Linux-Menu
+#programPath = os.path.dirname(os.path.realpath('__file__')) # seems not work run from Linux-Menu
+#import inspect
+#programPath = inspect.getfile(lambda: None) # seems not work run from Linux-Menu
+# This work from Linux-Menu
+#programPath = os.path.dirname(os.path.abspath(__file__))
+
+# images in program folder
+#theImage = programPath+"/logo.png"
+splashImage = os.path.join(programPath, "splash.gif")
+programIcon = splashImage
+#programIcon = os.path.join(programPath, "pass.png")
+
+screenW = 460
+screenH = 400
+confirmButtonsY = 200
+winBackground1 = "#fdbaf8"
+labelColor1 = "#aa2ee6"
+FONT_NAME = "Arial"
+labelFontSize = 12
+frameCnt = 18 # frames in the splashImage
+gridWidth = 61
+
+messageBoxTitle = "thaiiceland say:"
+mainWindowTitle = "thaiiceland"
+dictItems = ["Name", "Web", "UserName", "Password", "Other_API", "Annad"]
+userName = ""
+designEmail = "thaiiceland@gmail.com"
+
+
+# Check Operating System directory structure to the thaiicePass program folder
+# If the data folder does not exist, then create the folder.
+if platform.startswith("linux"):  # linux
+  passwordFolder = os.path.join(programPath, "."+dataFolder)
+  if not os.path.exists(passwordFolder):
+    os.mkdir(passwordFolder)
+
+elif platform.startswith("win"):  # Windows
+  passwordFolder = os.path.join(programPath, dataFolder)
+  if not os.path.exists(passwordFolder):
+    os.mkdir(passwordFolder)
+    import ctypes
+    ctypes.windll.kernel32.SetFileAttributesW(passwordFolder, 0x02)
+
+elif platform.startswith("darwin"):  # Mac os
+  passwordFolder = os.path.join(programPath, "."+dataFolder)
+  if not os.path.exists(passwordFolder):
+    os.mkdir(passwordFolder)
+
+elif platform.startswith("freebsd"):  # BSD
+  passwordFolder = os.path.join(programPath, "."+dataFolder)
+  if not os.path.exists(passwordFolder):
+    os.mkdir(passwordFolder)
+
+# the data file (in the data folder)
+passWordFile = passwordFolder+"myPass.json"
+
+
+# ---------------------------- PASSWORD GENERATOR  --------------------------- #
+
+def generatePassword():
+  # PASSWORD CHARACTERS  #
+  lowerCase = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+    'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+  higherCase = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+    'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+  numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+  symbols = ['!', '#', '$', '%', '&', '(', ')', '*', '+', '-', '_']
+
+  # making password not less than 15 char and not more than 20 char
+  noOfHigerCase = random.randint(3, 6)
+  noOfNumbers = random.randint(3, 4)
+  noOfSymbols = random.randint(3, 4)
+  noOfLowerCase = random.randint((16-noOfHigerCase-noOfNumbers-noOfSymbols),
+    (20-noOfHigerCase-noOfNumbers-noOfSymbols))
+  randomLower = [random.choice(lowerCase) for i in range(noOfLowerCase)]
+  randomHiger = [random.choice(higherCase) for i in range(noOfHigerCase)]
+  randomNumbers = [random.choice(numbers) for i in range(noOfNumbers)]
+  randomSymbols = [random.choice(symbols) for i in range(noOfSymbols)]
+  randomChoise = randomSymbols + randomNumbers + randomHiger + randomLower
+  random.shuffle(randomChoise)
+
+  randomPassword = "".join(randomChoise)
+  myPassword.delete(0, "end")
+  myPassword.insert(0, randomPassword)
+
+  # Copy Password to clipboard
+  try:
+    window.clipboard_clear()
+    window.clipboard_append(randomPassword)
+  except:
+    pass
+
+# ---------------------------- SAVE PASSWORD ------------------------------- #
+
+def isChecked():
+  # confirm to save password
+  if addEntryConfirm.get() == 1:
+    buttonAddPassword.config(state="active")
+  else:
+    buttonAddPassword.config(state="disabled")
+
+def checkEntryes():
+  global changeContent
+  buttonAddPassword.config(text="OK")
+  if len(shortEntry.get()) == 0 or len(myPassword.get()) == 0:
+    messagebox.showerror(title=messageBoxTitle, message='Website or password cannot be empty', icon="error")
+    return
+  new_data = {shortEntry.get(): {dictItems[1]:webEntry.get(),
+        dictItems[2]: usernameEntry.get(), dictItems[3]: myPassword.get(),
+        dictItems[4]: otherEntry.get(), dictItems[5]: ""}}
+  try:
+    with open(passWordFile, mode="r") as file:
+      data = json.load(file)
+  except:
+    with open(passWordFile, mode="w") as file:
+      json.dump(new_data, file)
+  else:
+    okCancelLabel.config(
+      text=f'Check if ok:\n{dictItems[0]}: {shortEntry.get()}\n{dictItems[1]}: {webEntry.get()}\n'+
+       f'{dictItems[2]}: {usernameEntry.get()}\n{dictItems[3]}: {myPassword.get()}\n'+
+       f'{dictItems[4]}: {otherEntry.get()}\n\n click OK or CANCEL')
+    for i in data.keys():
+      if shortEntry.get() == i:
+        cangeEntry = messagebox.askyesno(title=messageBoxTitle,
+          message=f'Entry {shortEntry.get()} already exist, do you want to replace? Y / N')
+        if cangeEntry:
+          buttonAddPassword.config(text="Replace")
+          okCancelLabel.config(
+          text=f'Change entry to:\n{dictItems[0]}: {shortEntry.get()}\n{dictItems[1]}: {webEntry.get()}\n'+
+           f'{dictItems[2]}: {usernameEntry.get()}\n{dictItems[3]}: {myPassword.get()}\n'+
+           f'{dictItems[4]}: {otherEntry.get()}\n\nIf Click Replace, the change will be permanent:')
+        else:
+          buttonCansel()
+          return
+      buttonAddPassword.place(x=160, y=confirmButtonsY)
+      okCancelLabel.place(x=0, y=0)
+      buttonCancel.place(x=40, y=confirmButtonsY)
+      addEntryCheckbox.place(x=260, y=confirmButtonsY)
+
+def buttonCansel():
+  shortEntry.delete(0, "end")
+  webEntry.delete(0, "end")
+  usernameEntry.delete(0, "end")
+  myPassword.delete(0, "end")
+  otherEntry.delete(0, "end")
+
+  addEntryCheckbox.config()
+  addEntryCheckbox.deselect()
+  addEntryCheckbox.place_forget()
+  buttonAddPassword.config(state="disabled")
+  buttonAddPassword.place_forget()
+  okCancelLabel.place_forget()
+  buttonCancel.place_forget()
+  shortEntry.focus()
+
+def addPasswordToFile():
+  with open(passWordFile, mode="r") as file_input:
+    data = json.load(file_input)
+    data[shortEntry.get()] = {dictItems[1]:webEntry.get(),
+        dictItems[2]: usernameEntry.get(), dictItems[3]: myPassword.get(),
+        dictItems[4]: otherEntry.get(), dictItems[5]: ""}
+  with open(passWordFile, mode="w") as file_output:
+    json.dump(data, file_output, indent=1)
+  buttonCansel()
+  messagebox.showinfo(title=messageBoxTitle, message='Your entry was saved', icon="info")
+
+  shortEntry.focus()
+
+# ------------------------- SEARCH IN PASSWORD LIST ------------------------- #
+
+def findEntryPassword():
+  if len(shortEntry.get()) == 0:
+    messagebox.showerror(title=messageBoxTitle, message='Name cannot be empty', icon="error")
+    return
+  try:
+    with open(passWordFile, mode="r") as file:
+      data = json.load(file)
+  except:
+    messagebox.showerror(title=messageBoxTitle, message='No Datafile was found!!!', icon="error")
+  else:
+    i = shortEntry.get()
+    if i in data.keys():
+      webEntry.delete(0, "end")
+      webEntry.insert(0, data[i][dictItems[1]])
+      usernameEntry.delete(0, "end")
+      usernameEntry.insert(0, data[i][dictItems[2]])
+      myPassword.delete(0, "end")
+      myPassword.insert(0, data[i][dictItems[3]])
+      otherEntry.delete(0, "end")
+      otherEntry.insert(0, data[i][dictItems[4]])
+      okCancelLabel.config(text=f'Entry found:\n{dictItems[0]}: {i}\n'+
+       f'{dictItems[1]}: {data[i][dictItems[1]]}\n{dictItems[2]}: {data[i][dictItems[2]]}\n'+
+       f'{dictItems[3]}: {data[i][dictItems[3]]}\n{dictItems[4]}: {data[i][dictItems[4]]}\n'+
+       f'\n\n click CANCEL to clear')
+      okCancelLabel.place(x=0, y=0)
+      buttonCancel.place(x=40, y=confirmButtonsY)
+      try:
+        window.clipboard_clear()
+        window.clipboard_append(data[i][dictItems[3]])
+      except:
+        pass
+    else:
+      messagebox.showerror(title=messageBoxTitle, message='This entry is not in the list!!!', icon="error")
+      return
+
+# -------------------- copy to clipboards buttons -------------------------- #
+
+def clipBoard1():
+  try:
+    window.clipboard_clear()
+    window.clipboard_append(shortEntry.get())
+  except:
+    pass
+
+def clipBoard2():
+  try:
+    window.clipboard_clear()
+    window.clipboard_append(webEntry.get())
+  except:
+    pass
+
+def clipBoard3():
+  try:
+    window.clipboard_clear()
+    window.clipboard_append(usernameEntry.get())
+  except:
+    pass
+
+def clipBoard4():
+  try:
+    window.clipboard_clear()
+    window.clipboard_append(myPassword.get())
+  except:
+    pass
+
+def clipBoard5():
+  try:
+    window.clipboard_clear()
+    window.clipboard_append(otherEntry.get())
+  except:
+    pass
+
+# ----------------------------- Loggin window ------------------------------ #
+def userlogin():
+  if len(adminentry.get()) == 0 or len(adminpass.get()) == 0:
+    messagebox.showerror(title=messageBoxTitle, message='Name or Password cannot be empty', icon="error")
+    return
+  i = adminentry.get()
+  p = adminpass.get()
+  try:
+    with open(passWordFile, mode="r") as file:
+      data = json.load(file)
+  except:
+    admin_data = {"": {"Web": "", "UserName": i, "Password": p, "Other_API": "", "Annad": "" }}
+    with open(passWordFile, mode="w") as file:
+      json.dump(admin_data, file)
+    mypop.destroy()
+  else:
+    if "" in data.keys():
+      if i != data[""]["UserName"] or p != data[""]["Password"]:
+        messagebox.showerror(title=messageBoxTitle, message='Your Username or Password is not correct', icon="error")
+        tkinter.Button(mypop, text="Quit", width=int(gridWidth*.3), command=mypop.quit).grid(row=7, column=0)
+      else:
+        mypop.destroy()
+    else:
+      messagebox.showerror(title=messageBoxTitle, message='The data is corrupted, cannot find any user', icon="error")
+      tkinter.Button(mypop, text="Quit", width=int(gridWidth*.3), command=mypop.quit).grid(row=7, column=0)
+
+# exit the program when click on closing X in login window
+def on_closing():
+  if messagebox.askokcancel("Quit", "Do you want to quit?"):
+    mypop.quit()
+
+
+
+# -------------------------------- UI SETUP --------------------------------- #
+# User Loggin
+mypop = tkinter.Tk()
+mypop.title("Insert User and Password")
+mypop.minsize(width=300, height=300)
+mypop.config(padx=50, pady=40, bg=winBackground1)
+textTypeInPasswordlist =["Type in User and Password:\n\nIf this is new instalion,\n",
+"you make NEW user and password here\nSelect a password that you can easy remember,\n",
+"but others wont find out, because you\ncannot change this afterwards."]
+textTypeInPassword="".join(textTypeInPasswordlist)
+
+adminLabel = tkinter.Label(text=textTypeInPassword, font=(FONT_NAME, labelFontSize, "normal"),
+ bg=winBackground1, anchor="w").grid(row=0, column=0)
+adminentry = tkinter.Entry(show=None, width=gridWidth, font=(FONT_NAME, labelFontSize))
+adminentry.focus()
+adminentry.grid(row=1, column=0, columnspan=2)
+adminpass = tkinter.Entry(show=None, width=gridWidth, font=(FONT_NAME, labelFontSize))
+adminpass.focus()
+adminpass.grid(row=2, column=0, columnspan=2)
+buttonAdmin = tkinter.Button(text="Enter", width=int(gridWidth*.3), command=userlogin).grid(row=6, column=0)
+mypop.protocol("WM_DELETE_WINDOW", on_closing)
+
+# make image for mypop window (have to be seperate for each window)
+frames = [tkinter.PhotoImage(file=splashImage,format = 'gif -index %i' %(i)) for i in range(frameCnt)]
+
+def update(ind):
+  frame = frames[ind]
+  ind += 1
+  if ind == frameCnt:
+    ind = 0
+  splashImgCanvas.create_image(150, 161, image=frame)
+  mypop.after(160, update, ind)
+
+splashImg = tkinter.PhotoImage(file=splashImage)
+splashImgCanvas = tkinter.Canvas(width=300, height=323, bg=winBackground1, highlightthickness=0)
+splashImgCanvas.create_image(150, 161, image=splashImg)
+splashImgCanvas.grid(row=0, column=1)
+
+# let animated gif file make animation
+mypop.after(0, update, 0)
+mypop.mainloop()
+
+
+# window GUI
+window = tkinter.Tk()
+window.title(mainWindowTitle)
+# to display Icon for the program
+theIcon = tkinter.PhotoImage(file=programIcon)
+window.iconphoto(False, theIcon)
+window.minsize(width=int(screenW*1.5), height=int(screenH))
+window.config(padx=50, pady=40, bg=winBackground1)
+
+# Canvas is used to set layers in top of each other, for example image in top of the window
+# to get rid of border between window and image, use highlightthickness=0 (crazy word)
+myImgCanvas = tkinter.Canvas(width=int(screenW), height=int(screenH*.7), bg=winBackground1, highlightthickness=0)
+myImg = tkinter.PhotoImage(file=splashImage)
+myImgCanvas.create_image(int(screenW*.5), int(screenH*.3), image=myImg)
+myImgCanvas.grid(row=0, column=1)
+
+# make image for window window (have to be seperate for each window)
+frames2 = [tkinter.PhotoImage(file=splashImage,format = 'gif -index %i' %(i)) for i in range(frameCnt)]
+
+def winupdate(ind):
+  frame = frames2[ind]
+  ind += 1
+  if ind == frameCnt:
+    ind = 0
+  myImgCanvas.create_image(int(screenW*.5), int(screenH*.3), image=frame)
+  window.after(160, winupdate, ind)
+
+# Labels
+shortName = tkinter.Label(text="Short Name:", font=(FONT_NAME, labelFontSize, "normal"),
+  bg=winBackground1, anchor="w").grid(row=1, column=0)
+webSite = tkinter.Label(text="Website:", font=(FONT_NAME, labelFontSize, "normal"),
+  bg=winBackground1, anchor="w").grid(row=2, column=0)
+usernameLabel = tkinter.Label(text="Email/Username:", font=(FONT_NAME, labelFontSize, "normal"),
+  bg=winBackground1, anchor="w").grid(row=3, column=0)
+passwordLabel = tkinter.Label(text="Password:", font=(FONT_NAME, labelFontSize, "normal"),
+  bg=winBackground1, anchor="w").grid(row=4, column=0)
+otherLabel = tkinter.Label(text="Other/API-key:", font=(FONT_NAME, labelFontSize, "normal"),
+  bg=winBackground1, anchor="w").grid(row=5, column=0)
+
+# input - Entry
+shortEntry = tkinter.Entry(show=None, width=gridWidth, font=(FONT_NAME, labelFontSize))
+shortEntry.focus()
+shortEntry.grid(row=1, column=1, columnspan=2)
+webEntry = tkinter.Entry(show=None, width=gridWidth, font=(FONT_NAME, labelFontSize))
+webEntry.focus()
+webEntry.grid(row=2, column=1, columnspan=2)
+
+usernameEntry = tkinter.Entry(show=None, width=gridWidth, font=(FONT_NAME, labelFontSize))
+usernameEntry.insert(0, userName)
+usernameEntry.grid(row=3, column=1, columnspan=2)
+myPassword = tkinter.Entry(show=None, width=int(gridWidth*.75), font=(FONT_NAME, labelFontSize))
+myPassword.grid(row=4, column=1)
+
+otherEntry = tkinter.Entry(show=None, width=gridWidth, font=(FONT_NAME, labelFontSize))
+#otherEntry.insert(0, "")
+otherEntry.grid(row=5, column=1, columnspan=2)
+
+# Buttons
+buttonGenerate = tkinter.Button(text="Generate Password", command=generatePassword, font=(FONT_NAME, 10)).grid(row=4, column=2)
+buttonAdd = tkinter.Button(text="Add", width=int(gridWidth*1.08), command=checkEntryes).grid(row=6, column=1, columnspan=2)
+buttonFind = tkinter.Button(text="Find Password", width=int(gridWidth*.3), command=findEntryPassword).grid(row=6, column=0)
+
+#button add ok or cancel
+buttonAddPassword = tkinter.Button(text="OK", command=addPasswordToFile, font=(FONT_NAME, 12), state="disabled")
+buttonCancel = tkinter.Button(text="Cancel", command=buttonCansel, font=(FONT_NAME, 12))
+okCancelLabel = tkinter.Label(text='', font=(FONT_NAME, 12, "normal"), borderwidth=2, relief="raised")
+okCancelLabel.config(width=80)
+
+# buttons to copy to clipboard
+bClipBoard1 = tkinter.Button(text="Copy", command=clipBoard1, font=(FONT_NAME, 12)).grid(row=1, column=3)
+bClipBoard2 = tkinter.Button(text="Copy", command=clipBoard2, font=(FONT_NAME, 12)).grid(row=2, column=3)
+bClipBoard3 = tkinter.Button(text="Copy", command=clipBoard3, font=(FONT_NAME, 12)).grid(row=3, column=3)
+bClipBoard4 = tkinter.Button(text="Copy", command=clipBoard4, font=(FONT_NAME, 12)).grid(row=4, column=3)
+bClipBoard5 = tkinter.Button(text="Copy", command=clipBoard5, font=(FONT_NAME, 12)).grid(row=5, column=3)
+
+addEntryConfirm = tkinter.IntVar()
+addEntryCheckbox = tkinter.Checkbutton(text="Confirm Add/Change Entry", font=(FONT_NAME, 12),
+  variable=addEntryConfirm, onvalue=1, offvalue=0, command=isChecked)
+
+# let animated gif file make animation
+window.after(0, winupdate, 0)
+window.mainloop()
