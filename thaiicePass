@@ -418,5 +418,6 @@ addEntryCheckbox = tkinter.Checkbutton(text="Confirm Add/Change Entry", font=(FO
   variable=addEntryConfirm, onvalue=1, offvalue=0, command=isChecked)
 
 # let animated gif file make animation
-window.after(0, winupdate, 0)
+#The animation seems to use lot of CPU so I comment it out
+# window.after(0, winupdate, 0)
 window.mainloop()
